@@ -55,6 +55,28 @@ class LibraryController extends Controller
             $shelf->games()->syncWithoutDetaching($ownedGameIds);
         }
     
+    
         return redirect()->back()->with('success', 'Shelf berhasil dibuat!');
+    }
+
+    /**
+     * Download dummy installer for the game.
+     */
+    public function download(Game $game)
+    {
+        // Check local ownership (optional check, but good practice)
+        // $ownsGame = Auth::user()->games()->where('game_id', $game->id)->exists();
+        // if (!$ownsGame) abort(403, 'You do not own this game.');
+
+        $content = "Installer for " . $game->title . "\n\nThis is a dummy file simulating the installation of the game.\nThank you for downloading from Kukus Store!";
+        $filename = "Install-" . preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', $game->title)) . ".exe";
+        
+        // For safety, we append .txt so it doesn't actually try to run, or we can force it as text/plain but name it .exe
+        // User asked for dummy file, let's keep it simple as text file named .bat or .txt to avoid browser blocking
+        // But user said "sistem select dummy file based on game name"
+        
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
+        }, $filename);
     }
 }

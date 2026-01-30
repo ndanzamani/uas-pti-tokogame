@@ -1,6 +1,12 @@
 @extends('layouts.guest')
 
 @section('content')
+{{-- 1. LOAD SCRIPT MIDTRANS --}}
+<script type="text/javascript"
+        src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('midtrans.client_key') }}"></script>
+{{-- Note: Ganti URL ke app.midtrans.com jika Production --}}
+
 <div class="bg-[#242629] min-h-screen py-8">
     <div class="max-w-4xl mx-auto">
     
@@ -23,19 +29,26 @@
             
             {{-- KIRI: Form Pembayaran --}}
             <div class="w-full md:w-2/3 border-r border-black pr-8">
-                <form action="{{ route('cart.process') }}" method="POST">
+                {{-- Tambahkan ID pada Form --}}
+                <form id="checkoutForm" action="{{ route('cart.process') }}" method="POST">
                     @csrf
                     @if(isset($selectedVoucher))
                         <input type="hidden" name="voucher_id" value="{{ $selectedVoucher->id }}">
                     @endif
                     
+                    {{-- Input Hidden untuk menyimpan hasil Midtrans --}}
+                    <input type="hidden" name="midtrans_result" id="midtrans_result">
+                    
+                    {{-- Kita butuh passing total final ke JS --}}
+                    <input type="hidden" id="final_total" value="{{ isset($finalTotal) ? $finalTotal : $total }}">
+
                     @php $kukusMoneyBalance = Auth::user()->kukus_money_balance ?? 0; @endphp
                     
                     <div class="mb-6">
                         <label class="block text-[#66c0f4] text-xs font-bold uppercase mb-2">Pilih Metode Pembayaran</label>
                         <div class="space-y-2">
                             
-                            {{-- BARU: Opsi Kukus Money --}}
+                            {{-- Opsi Kukus Money (Internal) --}}
                             <label class="flex flex-col bg-[#242629] p-3 rounded cursor-pointer border border-transparent hover:border-white group">
                                 <div class="flex items-center">
                                     <input type="radio" name="payment_method" value="kukus_money" class="form-radio text-red-500 focus:ring-0">
@@ -47,48 +60,44 @@
                                 </div>
                             </label>
 
-                            {{-- Metode Pihak Ketiga --}}
+                            {{-- Metode Pihak Ketiga (Midtrans Group) --}}
+                            {{-- Kita tambahkan class 'midtrans-method' untuk memudahkan seleksi di JS --}}
+                            
                             <label class="flex items-center bg-[#242629] p-3 rounded cursor-pointer border border-transparent hover:border-white group">
-                                <input type="radio" name="payment_method" value="dana" class="form-radio text-[#66c0f4] focus:ring-0">
-                                <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">DANA</span>
+                                <input type="radio" name="payment_method" value="gopay" class="form-radio midtrans-method text-[#66c0f4] focus:ring-0">
+                                <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">GoPay / QRIS</span>
                                 <span class="ml-auto text-xs text-gray-400">E-Wallet</span>
                             </label>
 
                             <label class="flex items-center bg-[#242629] p-3 rounded cursor-pointer border border-transparent hover:border-white group">
-                                <input type="radio" name="payment_method" value="qris" class="form-radio text-[#66c0f4] focus:ring-0">
-                                <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">QRIS</span>
-                                <span class="ml-auto text-xs text-gray-400">Scan QR</span>
-                            </label>
-
-                            <label class="flex items-center bg-[#242629] p-3 rounded cursor-pointer border border-transparent hover:border-white group">
-                                <input type="radio" name="payment_method" value="bca" class="form-radio text-[#66c0f4] focus:ring-0">
-                                <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">Bank Transfer (BCA)</span>
+                                <input type="radio" name="payment_method" value="bank_transfer" class="form-radio midtrans-method text-[#66c0f4] focus:ring-0">
+                                <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">Bank Transfer (VA)</span>
                                 <span class="ml-auto text-xs text-gray-400">Virtual Account</span>
                             </label>
 
                             <label class="flex items-center bg-[#242629] p-3 rounded cursor-pointer border border-transparent hover:border-white group">
-                                <input type="radio" name="payment_method" value="visa" class="form-radio text-[#66c0f4] focus:ring-0">
+                                <input type="radio" name="payment_method" value="credit_card" class="form-radio midtrans-method text-[#66c0f4] focus:ring-0">
                                 <span class="ml-3 text-white font-bold group-hover:text-[#66c0f4]">Visa / MasterCard</span>
                                 <span class="ml-auto text-xs text-gray-400">Credit Card</span>
                             </label>
                         </div>
-                        @error('payment_method')
-                            <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                        @enderror
+                        <span id="payment-error" class="text-red-500 text-xs mt-1 hidden">Silakan pilih metode pembayaran.</span>
                     </div>
 
                     <div class="mt-8 border-t border-gray-700 pt-6">
                         <p class="text-xs text-gray-400 mb-4">
-                            Dengan mengklik "Lanjutkan Pembelian", Anda menyetujui <a href="#" class="text-white hover:underline">Perjanjian Pelanggan SteamClone</a>.
+                            Dengan mengklik "Lanjutkan Pembelian", Anda menyetujui <a href="#" class="text-white hover:underline">Perjanjian Pelanggan Kukus</a>.
                         </p>
-                        <button type="submit" class="bg-[#2cb67d] hover:brightness-110 text-white font-bold py-3 px-8 rounded-sm shadow-lg uppercase tracking-wider text-sm w-full md:w-auto">
+                        
+                        {{-- Ubah button type jadi button dulu (handle by JS), atau preventDefault di JS --}}
+                        <button type="submit" id="pay-button" class="bg-[#2cb67d] hover:brightness-110 text-white font-bold py-3 px-8 rounded-sm shadow-lg uppercase tracking-wider text-sm w-full md:w-auto">
                             Lanjutkan Pembelian
                         </button>
                     </div>
                 </form>
             </div>
 
-            {{-- KANAN: Ringkasan --}}
+            {{-- KANAN: Ringkasan (Tidak Berubah) --}}
             <div class="w-full md:w-1/3">
                 <h3 class="text-gray-400 text-xs font-bold uppercase mb-4">Order Summary</h3>
                 
@@ -148,4 +157,83 @@
         </div>
     </div>
 </div>
+
+{{-- JAVASCRIPT INTEGRATION --}}
+<script>
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        let selectedPayment = document.querySelector('input[name="payment_method"]:checked');
+        
+        // 1. Validasi: Pastikan ada metode yang dipilih
+        if (!selectedPayment) {
+            e.preventDefault();
+            document.getElementById('payment-error').classList.remove('hidden');
+            return;
+        }
+
+        // 2. Logic Percabangan
+        if (selectedPayment.value === 'kukus_money') {
+            // Jika Kukus Money (Internal), biarkan form submit normal ke Laravel
+            return true; 
+        } else {
+            // Jika Midtrans (DANA, QRIS, dll), cegah submit default
+            e.preventDefault(); 
+            
+            let payButton = document.getElementById('pay-button');
+            payButton.innerHTML = 'Loading...';
+            payButton.disabled = true;
+
+            // Panggil endpoint AJAX untuk minta Snap Token
+            fetch("{{ route('cart.snap_token') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    total: document.getElementById('final_total').value,
+                    payment_type: selectedPayment.value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    alert('Error: ' + data.error);
+                    payButton.disabled = false;
+                    payButton.innerHTML = 'Lanjutkan Pembelian';
+                    return;
+                }
+
+                // Buka Pop-up Snap
+                window.snap.pay(data.snap_token, {
+                    onSuccess: function(result) {
+                        // Masukkan hasil JSON ke hidden input
+                        document.getElementById('midtrans_result').value = JSON.stringify(result);
+                        // Submit form secara manual ke 'cart.process' untuk simpan order di DB
+                        document.getElementById('checkoutForm').submit();
+                    },
+                    onPending: function(result) {
+                        document.getElementById('midtrans_result').value = JSON.stringify(result);
+                        document.getElementById('checkoutForm').submit();
+                    },
+                    onError: function(result) {
+                        alert("Pembayaran gagal!");
+                        payButton.disabled = false;
+                        payButton.innerHTML = 'Lanjutkan Pembelian';
+                    },
+                    onClose: function() {
+                        alert('Anda menutup popup pembayaran.');
+                        payButton.disabled = false;
+                        payButton.innerHTML = 'Lanjutkan Pembelian';
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan sistem.');
+                payButton.disabled = false;
+                payButton.innerHTML = 'Lanjutkan Pembelian';
+            });
+        }
+    });
+</script>
 @endsection

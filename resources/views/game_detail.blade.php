@@ -14,9 +14,53 @@
 
                     {{-- Kolom Kiri: Gambar Besar dan Tabs --}}
                     <div class="w-3/4">
-                        {{-- Gambar Cover/Screenshots Besar --}}
-                        <img src="{{ $game->cover_image }}" alt="{{ $game->title }} cover"
-                            class="w-full h-auto mb-6 rounded-lg shadow-xl">
+                        {{-- Main Media Display --}}
+                        <div class="mb-4 relative group">
+                            <div id="media-container" class="w-full aspect-video bg-black rounded-lg shadow-xl overflow-hidden flex items-center justify-center border border-gray-800">
+                                @if($game->trailer_url)
+                                    <video id="main-video" controls class="w-full h-full object-contain" poster="{{ $game->cover_image }}">
+                                        <source src="{{ $game->trailer_url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <img id="main-image" src="{{ $game->cover_image }}" alt="{{ $game->title }}" class="w-full h-full object-contain hidden">
+                                @else
+                                    <img id="main-image" src="{{ $game->cover_image }}" alt="{{ $game->title }}" class="w-full h-full object-contain">
+                                    <video id="main-video" controls class="w-full h-full object-contain hidden">
+                                        <source src="" type="video/mp4">
+                                    </video>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Thumbnails Carousel --}}
+                        <div class="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide mb-6">
+                            {{-- Trailer Thumbnail (if exists) --}}
+                            @if($game->trailer_url)
+                                <div class="flex-shrink-0 w-28 h-16 cursor-pointer border-2 border-blue-500 rounded overflow-hidden relative media-thumb"
+                                     onclick="showVideo('{{ $game->trailer_url }}')">
+                                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-white opacity-80" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                                    </div>
+                                    <img src="{{ $game->cover_image }}" class="w-full h-full object-cover">
+                                </div>
+                            @endif
+
+                            {{-- Cover Image Thumbnail --}}
+                            <div class="flex-shrink-0 w-28 h-16 cursor-pointer border-2 border-transparent hover:border-white rounded overflow-hidden media-thumb"
+                                 onclick="showImage('{{ $game->cover_image }}')">
+                                <img src="{{ $game->cover_image }}" class="w-full h-full object-cover">
+                            </div>
+
+                            {{-- Screenshots Thumbnails --}}
+                            @if($game->screenshots && is_array($game->screenshots))
+                                @foreach($game->screenshots as $screenshot)
+                                    <div class="flex-shrink-0 w-28 h-16 cursor-pointer border-2 border-transparent hover:border-white rounded overflow-hidden media-thumb"
+                                         onclick="showImage('{{ $screenshot }}')">
+                                        <img src="{{ $screenshot }}" class="w-full h-full object-cover">
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
 
                         {{-- TAB BUTTONS --}}
                         <div class="mb-6">
@@ -179,6 +223,40 @@
                     });
                 });
             });
+            
+            // Functions for Media Gallery
+            function showImage(url) {
+                const mainImage = document.getElementById('main-image');
+                const mainVideo = document.getElementById('main-video');
+                
+                // Hide video, pause it
+                mainVideo.classList.add('hidden');
+                mainVideo.pause();
+                
+                // Show image
+                mainImage.src = url;
+                mainImage.classList.remove('hidden');
+                
+                // Active state styling for thumbnails (optional enhancement)
+                document.querySelectorAll('.media-thumb').forEach(el => el.classList.remove('border-blue-500'));
+                // event.target.closest('.media-thumb').classList.add('border-blue-500'); // Requires event passing
+            }
+
+            function showVideo(url) {
+                const mainImage = document.getElementById('main-image');
+                const mainVideo = document.getElementById('main-video');
+                
+                // Hide image
+                mainImage.classList.add('hidden');
+                
+                // Show video
+                mainVideo.src = url; // Update source if needed
+                mainVideo.classList.remove('hidden');
+                mainVideo.play();
+                
+                 // Active state styling for thumbnails
+                 document.querySelectorAll('.media-thumb').forEach(el => el.classList.remove('border-blue-500'));
+            }
         </script>
     @endpush
 

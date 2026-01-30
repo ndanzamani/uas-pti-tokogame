@@ -118,7 +118,7 @@ class GameController extends Controller
             'genre' => 'required|string',
             'cover_image' => 'required|image|max:2048', // Max 2MB
             'screenshots.*' => 'nullable|image|max:2048', // Multiple images
-            'trailer_video' => 'nullable|mimetypes:video/mp4,video/avi,video/mpeg|max:20000', // Max 20MB
+            'trailer_video' => ['nullable', 'file', 'mimetypes:video/mp4,video/avi,video/mpeg', 'max:20480'], // Max 20MB (20480KB) - Array syntax is safer
         ]);
 
         // 1. Upload Cover Image

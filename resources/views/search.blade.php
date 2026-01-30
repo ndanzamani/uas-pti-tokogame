@@ -30,7 +30,7 @@
 
                 <div class="space-y-2">
                     @forelse ($games as $game)
-                        <a href="{{ route('game.show', $game) }}" class="flex bg-[#16202d] hover:bg-[#1f2f42] border border-black/50 hover:border-gray-500 transition group h-[120px] overflow-hidden relative shadow-md">
+                        <a href="{{ route('game.show', $game) }}" class="flex bg-[#16161a] hover:bg-purple-900 border border-black/50 hover:border-gray-500 transition group h-[120px] overflow-hidden relative shadow-md">
                             
                             {{-- Gambar --}}
                             <div class="w-[240px] flex-shrink-0 relative">

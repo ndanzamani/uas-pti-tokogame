@@ -163,7 +163,7 @@
                     </div>
                     <div class="mt-6 pt-6 border-t-4 border-black flex items-center justify-between bg-white p-6 -mx-6 -mb-6 shadow-inner">
                         <div><div class="text-xs font-bold text-gray-400 uppercase">Status</div><div class="text-3xl font-black text-black">INSTALLED</div></div>
-                        <button class="bg-[#5c7e10] hover:bg-[#76a113] text-white text-xl font-black px-10 py-3 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:translate-y-[0px] active:shadow-none transition-all flex items-center gap-3"><span>▶</span> PLAY NOW</button>
+                        <a id="mDownloadLink" href="#" class="bg-[#5c7e10] hover:bg-[#76a113] text-white text-xl font-black px-10 py-3 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:translate-y-[0px] active:shadow-none transition-all flex items-center gap-3"><span>⬇</span> DOWNLOAD NOW</a>
                     </div>
                 </div>
             </div>
@@ -323,6 +323,12 @@
         document.getElementById('mGenre').innerText = data.genre;
         document.getElementById('mPub').innerText = data.publisher;
         document.getElementById('mRel').innerText = data.release_date;
+        
+        // Update Download Link
+        // Assuming route is /library/download/{id} as defined in web.php
+        const downloadUrl = "{{ route('library.download', ':id') }}".replace(':id', data.id);
+        document.getElementById('mDownloadLink').href = downloadUrl;
+
         const modal = document.getElementById('gameModal');
         const backdrop = document.getElementById('modalBackdrop');
         const card = document.getElementById('modalCard');

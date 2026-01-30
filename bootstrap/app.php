@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\EnsureUserHasRole; 
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,10 +12,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // === DAFTARKAN ALIAS MIDDLEWARE DI SINI ===
-        // Ini pengganti $routeMiddleware di Kernel.php yang lama
+        
+        // 2. DAFTARKAN ALIAS DI SINI
         $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'role' => EnsureUserHasRole::class, // <--- TAMBAHKAN INI
+        ]);
+
+
+        // (Kode lama Anda tetap biarkan di bawahnya)
+        // PENTING: Matikan CSRF untuk endpoint callback Midtrans
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/callback', 
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

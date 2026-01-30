@@ -9,7 +9,8 @@ use App\Http\Controllers\RefundController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DailyChallengeController;
 use App\Http\Controllers\VoucherController;
-use App\Http\Controllers\TopupController; // BARU: Import TopupController
+use App\Http\Controllers\TopupController;
+use App\Http\Controllers\PaymentController; 
 use Illuminate\Support\Facades\Route;
 
 // --- EXISTING ROUTES ---
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- END KUKUS MONEY ---
 
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+    Route::get('/library/download/{game}', [LibraryController::class, 'download'])->name('library.download');
     Route::post('/shelf', [LibraryController::class, 'storeShelf'])->name('shelf.store');
 
     // Profile Routes
@@ -116,5 +118,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/voucher-shop', [VoucherController::class, 'index'])->name('voucher.shop');
     Route::post('/voucher-shop/buy/{voucher}', [VoucherController::class, 'buy'])->name('voucher.buy');
 });
+
+// payment
+Route::get('/checkout', [PaymentController::class, 'checkout']);
+Route::post('/midtrans/callback', [PaymentController::class, 'callback']);
+
+
+// Route untuk menampilkan halaman checkout
+Route::get('/checkout', [PaymentController::class, 'checkout'])->name('cart.checkout');
+
+// Route AJAX untuk mengambil Snap Token (PENTING)
+Route::post('/cart/snap-token', [PaymentController::class, 'getSnapToken'])->name('cart.snap_token');
+
+// Route Callback Midtrans (Non-CSRF)
+Route::post('/midtrans/callback', [PaymentController::class, 'callback']);
 
 require __DIR__.'/auth.php';
